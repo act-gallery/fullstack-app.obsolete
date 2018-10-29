@@ -1,0 +1,138 @@
+@extends(_base)
+<style>
+  label {width: 70px; display: inline-block}
+  td {padding: 10px 40px;}
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  #eq {font-weight: bold;}
+  #eq.eq-true {color: green}
+  #eq.eq-false {color: red}
+</style>
+<h3>Introduction</h3>
+<p>This app demonstrate how to use <code>@@AutoObject</code> to have the system generate Java Object methods
+including equals(Object) and hashCode()</p>
+<p>If you load the page without changing anything, you should see the hashCode of both foo1 and foo2 is the
+  same, and they are equal to each other.</p>
+<p>Now go to the <code>src/main/java/act/fsa/auto_obj/Foo.java</code> and comment out the line <code>@@AutoObject</code>, then
+come back to your browser and press F5, you should observed that Foo1 and Foo2 are no longer equal to each other, and their
+hashCode value are now different</p>
+
+@def foo(int id) {
+  <ul id="foo@id">
+    <li>
+      <label>id</label>
+      <input class="id">
+    </li>
+    <li>
+      <label>desc</label>
+      <input class="desc">
+    </li>
+    <li>
+      <label>random1</label>
+      <input class="r1">
+    </li>
+    <li class="bar">
+      <b>bar</b>
+      <ul>
+        <li>
+          <label>id</label>
+          <input class="bar-id">
+        </li>
+        <li>
+          <label>desc</label>
+          <input class="bar-desc">
+        </li>
+      </ul>
+    </li>
+  </ul>
+  <p>
+    <button class="update" data-id="@id">Update</button>
+  </p>
+}
+
+<table border="1">
+  <thead>
+  <tr>
+    <th></th>
+    <th>Foo1</th>
+    <th>Foo2</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr>
+    <td>Content</td>
+    <td>@foo(1)</td>
+    <td>@foo(2)</td>
+  </tr>
+  <tr>
+    <td>hashCode</td>
+    <td id="hc1"></td>
+    <td id="hc2"></td>
+  </tr>
+  </tbody>
+</table>
+
+<p>foo1.equals(foo2) ? <span id="eq"></span></p>
+
+@section(js){
+<script>
+  $(function(){
+
+  var load = function(i) {
+    $.getJSON("/foo/" + i, function(foo) {
+      var $root = $('#foo' + i);
+      $root.find('.id').val(foo.id);
+      $root.find('.desc').val(foo.desc);
+      $root.find('.r1').val(foo.r1);
+      $root.find('.bar-id').val(foo.bar.id);
+      $root.find('.bar-desc').val(foo.bar.desc);
+    })
+  }
+
+  var checkEq = function() {
+    $.get('/eq', function(result) {
+      $('#eq').text(result).attr('class', 'eq-' + result);
+    })
+  }
+
+  var hashCode = function(i) {
+    $.getJSON('/foo/' + i + '/hc', function(result) {
+      console.log(result);
+      $('#hc' + i).text(result);
+    })
+  }
+
+  var reload = function() {
+    load(1);
+    load(2);
+    checkEq();
+    hashCode(1);
+    hashCode(2);
+  }
+
+  reload();
+
+  var read = function(id) {
+    var foo = {}, $root = $('#foo' + id);
+    foo.id = $root.find('.id').val();
+    foo.desc = $root.find('.desc').val();
+    foo.bar = {};
+    foo.bar.id = $root.find('.bar-id').val();
+    foo.bar.desc = $root.find('.bar-desc').val();
+    $.ajax('/foo/' + id, {
+      method: 'POST',
+      data: JSON.stringify(foo),
+    }).done(reload).fail(function() {
+      alert("fail");
+    });
+  }
+
+  $('.update').click(function() {
+    read($(this).data('id'));
+  });
+
+  })
+</script>
+}
